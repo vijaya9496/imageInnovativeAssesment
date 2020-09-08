@@ -2,6 +2,8 @@ package com.imaginnovate.assesment.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,19 +37,69 @@ public class EmpDetailsService {
 		PhoneNumberData phoneData;
 		
 		empDetails.setEmpCode(empDetailsVO.getCode());
-		empDetails.setFirstName(empDetails.getFirstName());
-		empDetails.setLastName(empDetailsVO.getLastName());
-		empDetails.setEmail(empDetailsVO.getEmail());
-		empDetails.setDateOfJoining(empDetailsVO.getDateOfJoining());
+		String nameRegex = "^[a-zA-Z]+$";
+		Pattern namePattern = Pattern.compile(nameRegex);
+		Matcher firstNameMatcher = namePattern.matcher(empDetails.getFirstName());
+		Matcher lastNameMatcher = namePattern.matcher(empDetails.getFirstName());
+		if(firstNameMatcher.matches()) {
+			empDetails.setFirstName(empDetails.getFirstName());
+		}else {
+			baseResponseVO.setResponseCode(HttpStatus.BAD_REQUEST.value());
+			baseResponseVO.setResponseMessage("Please Provide Only Alphabets for FirstName");
+			return baseResponseVO;
+		}
+		
+		if(lastNameMatcher.matches()) {
+			empDetails.setLastName(empDetailsVO.getLastName());
+		}else {
+			baseResponseVO.setResponseCode(HttpStatus.BAD_REQUEST.value());
+			baseResponseVO.setResponseMessage("Please Provide Only Alphabets for LasttName");
+			return baseResponseVO;
+		}
+		
+		
+		
+		String emailRegex = "^[A-Za-z0-9+_.-]+@(.+)$";
+		Pattern pattern = Pattern.compile(emailRegex);
+		Matcher matcher = pattern.matcher(empDetailsVO.getEmail());
+		if(matcher.matches()) {
+			empDetails.setEmail(empDetailsVO.getEmail());
+		}else {
+			baseResponseVO.setResponseCode(HttpStatus.BAD_REQUEST.value());
+			baseResponseVO.setResponseMessage("Please Provide Valid Email");
+			return baseResponseVO;
+		}
+		
+		// pattern YYYY-MM-DD or YYYY-M-D
+		String dateRegex = "^\\d{4}\\-(0[1-9]|1[012])\\-(0[1-9]|[12][0-9]|3[01])$";
+		Pattern datePattern = Pattern.compile(dateRegex);
+		Matcher dateMatcher = datePattern.matcher(String.valueOf(empDetailsVO.getDateOfJoining()));
+		if(dateMatcher.matches()) {
+			empDetails.setDateOfJoining(empDetailsVO.getDateOfJoining());
+		}else {
+			baseResponseVO.setResponseCode(HttpStatus.BAD_REQUEST.value());
+			baseResponseVO.setResponseMessage("Please Provide Valid Date (YYYY-MM-DD or YYYY-M-D)");
+			return baseResponseVO;
+		}
+		
 		empDetails.setSalary(empDetailsVO.getSalary());
 		
 		// adding list of phone numbers to empcode
+		Pattern phonePattern = Pattern.compile("^\\d{10}$");
+	    
 		if(empDetailsVO.getPhoneNumber() != null) {
 			for(PhoneNumber phone:empDetailsVO.getPhoneNumber()) {
 				phoneData = new PhoneNumberData();
-				phoneData.setPhoneNumber(phone.getPhoneNo());
-				phoneNumberRepo.save(phoneData);
-				listPhoneData.add(phoneData);
+				Matcher phoneMatcher = phonePattern.matcher(String.valueOf(phone.getPhoneNo()));
+				if(phoneMatcher.matches()) {
+					phoneData.setPhoneNumber(phone.getPhoneNo());
+					phoneNumberRepo.save(phoneData);
+					listPhoneData.add(phoneData);
+				}else {
+					baseResponseVO.setResponseCode(HttpStatus.BAD_REQUEST.value());
+					baseResponseVO.setResponseMessage("Please Provide Valid MobileNO");
+					return baseResponseVO;
+				}
 			}
 			empDetails.setPhoneNumbers(listPhoneData);
 			
